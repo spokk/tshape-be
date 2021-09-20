@@ -1,26 +1,58 @@
 service: product-service
-frameworkVersion: '2'
+frameworkVersion: "2"
 variablesResolutionMode: 20210219
 
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: ${opt:stage, 'dev'}
-  region: us-east-1
+  stage: 'dev'
+  region: eu-west-1
   environment:
     ENV_STAGE: ${opt:stage, 'dev'}
-    PGHOST: ${self:custom.dotenvVars.PGHOST, env:PGHOST, ''}
-    PGUSER: ${self:custom.dotenvVars.PGUSER, env:PGUSER, ''}
-    PGDATABASE: ${self:custom.dotenvVars.PGDATABASE, env:PGDATABASE, ''}
-    PGPASSWORD: ${self:custom.dotenvVars.PGPASSWORD, env:PGPASSWORD, ''}
-    PGPORT: ${self:custom.dotenvVars.PGPORT, env:PGPORT, ''}
+    PGHOST: lesson4.coiucooqlsgl.eu-west-1.rds.amazonaws.com
+    PGUSER: postgres
+    PGDATABASE: lesson4
+    PGPASSWORD: 58Sjt3ZOfwy3RJGiMZUb
+    PGPORT: 5432
+    SNS_ARN: !Ref createProductTopic
+    SQS_URL: !Ref catalogItemsQueue
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: "sqs:*"
+      Resource:
+        - Fn::GetAtt: [ catalogItemsQueue, Arn ]
+    - Effect: "Allow"
+      Action: "sns:*"
+      Resource:
+        Ref: createProductTopic
+        
+resources:
+  Resources:
+    catalogItemsQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: cvs-sqs
+    createProductTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: notify-about-products
+    createProductTopicSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: game1life1@gmail.com
+        Protocol: email
+        TopicArn:
+          Ref: createProductTopic
+
+
 
 plugins:
   - serverless-webpack
 
 custom:
   webpack:
-    webpackConfig: 'webpack.config.js'
+    webpackConfig: "webpack.config.js"
     includeModules: true
     dotenvVars: ${file(configs.js)}
 
@@ -36,8 +68,8 @@ functions:
             parameters:
               paths:
                 productId: true
-  getAllProducts:
-    handler: handler.getAllProducts
+  getProductsList:
+    handler: handler.getProductsList
     events:
       - http:
           path: products
@@ -51,5 +83,17 @@ functions:
           method: post
           cors: true
           request:
-              schema:
-                application/json: ${file(src/schemas/createProductSchema.json)}
+            schema:
+              application/json: ${file(src/schemas/createProductSchema.json)}
+  catalogBatchProcess:
+    handler: handler.catalogBatchProcess
+    events:
+      - sqs:
+          batchSize: 5
+          arn:
+            Fn::GetAtt: [catalogItemsQueue, Arn]
+
+
+Outputs:
+  SQS_URL:
+    Value: !Ref catalogItemsQueu

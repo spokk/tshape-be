@@ -5,20 +5,44 @@ variablesResolutionMode: 20210219
 
 provider:
   name: aws
-  runtime: nodejs12.x
-  stage: ${opt:stage, 'dev'}
-  region: us-east-1
+  runtime: nodejs14.x
+  stage: 'dev'
+  region: eu-west-1
+  # environment:
+  #   SQS_URL: ${cf:product-service-dev.SQS_URL}
 
   iamRoleStatements:
     - Effect: "Allow"
       Action: "s3:ListBucket"
       Resource:
-        - "arn:aws:s3:::node-in-aws-cloud-catalogs"
+        - "arn:aws:s3:::mybuckettask5"
     - Effect: "Allow"
       Action:
         - "s3:*"
       Resource:
-        - "arn:aws:s3:::node-in-aws-cloud-catalogs/*"
+        - "arn:aws:s3:::mybuckettask5/*"
+    # - Effect: "Allow"
+    #   Action: "sqs:*"
+    #   Resource:
+    #     - Fn::GetAtt: [ catalogItemsQueue, Arn ]
+
+  # environment:
+  #   SQS_URL:
+  #     Ref: catalogItemsQueue
+
+# resources:
+#   Resources:
+#     catalogItemsQueue:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         QueueName: cvs-sqs
+
+#     createProductTopic:
+#       Type: AWS::SNS::Topic
+#       Properties:
+#         TopicName: notify-about-products
+
+
 
 plugins:
   - serverless-webpack
@@ -44,7 +68,11 @@ functions:
 
   importFileParser:
     handler: handler.importFileParser
+    events:
       - s3:
-          bucket: uploaded
+          bucket: mybuckettask5
           event: s3:ObjectCreated:*
+          rules: 
+            - prefix: 'uploaded/'
           existing: true
+  

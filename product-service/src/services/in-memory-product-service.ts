@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 class InMemoryProductService implements ProductServiceInterface {
     getProductById(id: string) {
-        return Promise.resolve(products.find( product => product.id === id ));
+        return Promise.resolve(products.find(product => product.id === id));
     }
 
     getAllProducts() {

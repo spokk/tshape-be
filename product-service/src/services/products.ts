@@ -3,7 +3,7 @@ export interface ProductInterface {
     title: string,
     description: string,
     price: number,
-    logo: string,
+    logo?: string,
     count: number,
 }
 
@@ -11,7 +11,7 @@ export interface ProductInterface {
     title: string,
     description: string,
     price: number,
-    logo: string,
+    logo?: string,
     count: number,
 }
 

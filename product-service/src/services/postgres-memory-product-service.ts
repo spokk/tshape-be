@@ -5,7 +5,7 @@ class PostgresProductService implements ProductServiceInterface {
 
     private tableName = 'products';
 
-    constructor(private databaseClient: Client){}
+    constructor(private databaseClient: Client) { }
 
     async getProductById(id: string): Promise<ProductInterface> {
 
@@ -14,7 +14,7 @@ class PostgresProductService implements ProductServiceInterface {
             values: [id],
         } as QueryConfig;
 
-        const result = await  this.databaseClient.query(query);
+        const result = await this.databaseClient.query(query);
         return result.rows[0] ? result.rows[0] : null;
     }
 
@@ -27,12 +27,15 @@ class PostgresProductService implements ProductServiceInterface {
         return result.rows ? result.rows : null;
     }
 
-    async create(product: Pick<ProductInterface, 'title' | 'description' | 'price' | 'logo' | 'count'>) {
-        const query = {
-            text: `INSERT INTO ${this.tableName}(title, description, price, logo, count) VALUES($1, $2, $3, $4, $5) RETURNING *`,
-            values: [product.title, product.description, product.price, product.logo, product.count],
-        };
-        const result = await this.databaseClient.query(query);
+    async create(product: Pick<ProductInterface, 'title' | 'description' | 'price' | 'count'>) {
+        const { title, description, price, count } = JSON.parse(product as any)
+        const result = await this.databaseClient.query('INSERT INTO products(title, description, price) VALUES($1, $2, $3) RETURNING *', [title, description, parseFloat(price)]);
+
+        await this.databaseClient.query('INSERT INTO stocks(product_id, count) VALUES ($1, $2)', [
+            result.rows[0].id,
+            parseInt(count)
+        ]);
+
         return result.rows[0] ? result.rows[0] : null;
     }
 }
